@@ -1,0 +1,131 @@
+#:kivy 2.3.1
+
+<RootWidget>:
+    orientation: "vertical"
+    padding: 20
+    spacing: 15
+
+    # === ОСНОВНОЙ ИНТЕРФЕЙС ===
+    Label:
+        text: "Генератор паролей"
+        font_size: 40
+        color: 0, 1, 0, 1
+        bold: True
+        underline: True
+        height: self.texture_size[1] + dp(20)
+        canvas:
+            Color:
+                rgba: 0, 0, 1, .5
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+    Label:
+        id: password_display
+        text: "Ваш пароль появится тут"
+        font_size: 32
+        color: 0, 1, 1, 1
+        size_hint_y: None
+        height: 60
+        canvas:
+            Color:
+                rgba: 1, 1, 1, .5
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+    BoxLayout:
+        size_hint_y: None
+        height: 50
+        Label:
+            text: "Длина: 12"
+            id: length_label
+            font_size: 24
+            halign: 'center'
+        Slider:
+            id: length_slider
+            min: 8
+            max: 32
+            value: 12
+            on_value: length_label.text = f"Длина: {int(self.value)}"
+
+        Label:
+            text: "Выбирете типы символов:"
+            font_size: 24
+            size_hint_x: 2
+            halign: 'center'
+
+    GridLayout:
+        cols: 2
+        size_hint_y: None
+        height: 120
+        canvas:
+            Color:
+                rgba: 0, 1, 0, .5
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_x: 2
+            Switch:
+                id: lower
+                active: True
+            Label:
+                text: "Строчные буквы"
+                font_size: 20
+
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_x: 2
+            Switch:
+                id: upper
+                active: True
+            Label:
+                text: "Прописные буквы"
+                font_size: 20
+
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_x: 2
+            Switch:
+                id: digit
+                active: True
+            Label:
+                text: "Цифры"
+                font_size: 20
+
+        BoxLayout:
+            orientation: "horizontal"
+            size_hint_x: 2
+            Switch:
+                id: punct
+                active: True
+            Label:
+                text: "Знаки"
+                font_size: 20
+
+    Button:
+        text: "Сгенерировать пароль"
+        font_size: 30
+        color: 1, 0, 0, 1
+        italic: True
+        size_hint_y: None
+        height: 60
+        on_press: root.generate_password(int(length_slider.value), lower.active, upper.active, digit.active, punct.active)
+        canvas:
+            Color:
+                rgba: 0, 0, 1, .3
+            Rectangle:
+                pos: self.pos
+                size: self.size
+
+    Button:
+        font_size: 30
+        color: 0, 0.5, 1, 1
+        italic: True
+        size_hint_y: None
+        height: 60
+        text: "Копировать"
+        on_press: root.copy_to_clipboard()
