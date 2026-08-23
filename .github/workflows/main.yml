@@ -1,0 +1,56 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4 # Обновил до v4
+
+      # Очистка кэша от прошлых запусков
+      - name: Clean previous build
+        run: |
+          rm -rf .buildozer
+          rm -rf bin
+          rm -rf dist
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git zip openjdk-17-jdk autoconf automake build-essential libssl-dev libffi-dev python3-dev libgl1-mesa-dev libgles2-mesa-dev
+
+      - name: Install Python dependencies
+        run: |
+          pip install --upgrade pip
+          pip install cython virtualenv
+          # Здесь фиксируем версию Kivy под твой spec
+          pip install kivy==2.3.1
+
+      - name: Install Buildozer
+        run: pip install buildozer
+
+      - name: Initialize Buildozer (если файла еще нет)
+        run: if [ ! -f buildozer.spec ]; then buildozer init; fi
+
+      - name: Build APK
+        run: |
+          buildozer -v android debug
+        env:
+          COCOAPODS_NO_ANALYTICS: 1
+          ANDROID_ACCEPT_LICENSE: 1 # Дублируем согласие через переменную окружения для надежности
+
+      # Ищем файл глубоко во вложенных папках .buildozer
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-file
+          path: .buildozer/android/platform/*/dists/*/bin/*.apk 
