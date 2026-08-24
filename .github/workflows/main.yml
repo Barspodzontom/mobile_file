@@ -61,3 +61,4 @@ jobs:
         with:
           name: apk-file
           path: .buildozer/android/platform/*/dists/*/bin/*.apk 
+
