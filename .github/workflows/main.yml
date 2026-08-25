@@ -1,23 +1,64 @@
-- name: Build APK in official P4A container
-  env:
-    ANDROID_API: 33         # Целевая версия API
-    ANDROID_MINAPI: 24      # Минимальная поддерживаемая версия
-    DIST_NAME: passgen      # Название дистрибутива из spec-файла
-    REQUIRES: python3,kivy  # Зависимости из spec-файла
-    BOOTSTRAP: sdl2         # Бутстреп из spec-файла
-    ARCHS: arm64-v8a,armeabi-v7a,x86_64 # Архитектуры (можно убрать x86_64)
-  run: |
-    # Создаем папку для сохранения результатов ИЗМЕНЯЕМ ПОРЯДОК!
-    mkdir -p artifacts          # <--- ЭТО ДОЛЖНО БЫТЬ ПЕРВОЙ КОМАНДОЙ
+# Этот код заменяет ВСЁ содержание файла main.yml
+name: Build Android APK
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest # Можно оставить latest!
     
-    # Меняем владельца папки на пользователя runner (это важно!)
-    sudo chown runner:runner ./artifacts 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    # Собираем контейнером
-    docker run --rm \
-      -v ${GITHUB_WORKSPACE}:/home/user/app \ # <-- Эта строка уже есть
-      -v ${GITHUB_WORKSPACE}/artifacts:/home/user/app/artifacts \ # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
-      kivy/p4a-buildozer:python3.11-kivy2.3.0 \
-        ./toolchain.py create --debug
+      # Очистка кэша от прошлых запусков
+      - name: Clean previous build
+        run: |
+          rm -rf .buildozer bin dist
 
-    cp -r .buildozer/android/platform/build-*/*/dists/${DIST_NAME}/bin/*.apk artifacts/
+      # Установка зависимостей только для работы с Git и Docker
+      - name: Install system dependencies and classic Docker
+        run: |
+          sudo apt-get update && sudo apt-get upgrade -y
+          sudo apt-get install -y ca-certificates curl gnupg lsb-release
+          sudo mkdir -m 0755 -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+          sudo apt-get update
+          sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+      # Запуск официальной среды python-for-android внутри контейнера
+      - name: Build APK in official P4A container
+        env:
+          ANDROID_API: 33         # Целевая версия API
+          ANDROID_MINAPI: 24      # Минимальная поддерживаемая версия
+          DIST_NAME: passgen      # Название дистрибутива из spec-файла
+          REQUIRES: python3,kivy  # Зависимости из spec-файла
+          BOOTSTRAP: sdl2         # Бутстреп из spec-файла
+          ARCHS: arm64-v8a,armeabi-v7a,x86_64 # Архитектуры (можно убрать x86_64)
+        run: |
+          # Создаем папку для сохранения результатов ИЗМЕНЯЕМ ПОРЯДОК!
+          mkdir -p artifacts          # <--- ЭТО ДОЛЖНО БЫТЬ ПЕРВОЙ КОМАНДОЙ
+          
+          # Меняем владельца папки на пользователя runner (это важно!)
+          sudo chown runner:runner ./artifacts 
+
+          # Собираем контейнером
+          docker run --rm \  
+            -v ${GITHUB_WORKSPACE}:/home/user/app \ # <-- Эта строка уже есть
+            -v ${GITHUB_WORKSPACE}/artifacts:/home/user/app/artifacts \ # <--- ДОБАВЛЯЕТСЯ СЮДА!!!
+            kivy/p4a-buildozer:python3.11-kivy2.3.0 \
+              ./toolchain.py create --debug
+
+          cp -r .buildozer/android/platform/build-*/*/dists/${DIST_NAME}/bin/*.apk artifacts/
+
+      # Загружаем собранные файлы как артефакты
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-files
+          path: artifacts/*
