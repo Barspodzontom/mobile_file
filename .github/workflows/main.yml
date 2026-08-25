@@ -35,3 +35,10 @@ jobs:
             $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
           # Обновляем пакеты после добавления нового реп
+      - name: Mount artifacts directory for artifact upload
+        run: |
+          sudo chown runner:runner ./artifacts # Чтобы у пользователя был доступ к папке
+          docker run --rm \
+            -v ${GITHUB_WORKSPACE}:/home/user/app \ # <-- Эта строка уже есть
+            -v ${GITHUB_WORKSPACE}/artifacts:/home/user/app/artifacts \ # <--- ДОБАВЬТЕ ЭТУ СТРОКУ
+            kivy/p4a-buildozer:python3.11-kivy2.3.0 ...
