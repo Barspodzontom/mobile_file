@@ -48,7 +48,6 @@ jobs:
             -v ${GITHUB_WORKSPACE}/artifacts:/home/user/app/artifacts \
             kivy/p4a-buildozer:python3.11-kivy2.3.0 \
             ./toolchain.py create --debug
-
           cp -r .buildozer/android/platform/build-*/*/dists/${DIST_NAME}/bin/*.apk artifacts/
 
       # Загружаем собранные файлы как артефакты
