@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest # Можно оставить latest, теперь это не важно!
+    runs-on: ubuntu-latest # Можно оставить latest!
     
     steps:
       - name: Checkout code
@@ -18,36 +18,20 @@ jobs:
           rm -rf .buildozer bin dist
 
       # Установка зависимостей только для работы с Git и Docker
-      - name: Install system dependencies
-          # Установка Git и современного менеджера контейнеров для Ubuntu 24.04
+      - name: Install system dependencies and classic Docker
         run: |
-              # Обновляем список пакетов
-              sudo apt-get update
-            
-              # Устанавливаем Git
-              sudo apt-get install -y --no-install-recommends git
-            
-              # Удаляем старые остатки Docker, если они есть
-              sudo apt-get remove -y docker docker-engine containerd runc || true
-            
-              # Устанавливаем nerdctl (современный аналог Docker)
-              sudo snap install nerdctl --classic
+          sudo apt-get update && sudo apt-get upgrade -y
 
-      # Запуск официальной среды python-for-android внутри контейнера
-      - name: Build APK in official P4A container
-        env:
-          ANDROID_API: 33         # Целевая версия API
-          ANDROID_MINAPI: 24      # Минимальная поддерживаемая версия
-          DIST_NAME: passgen      # Название дистрибутива из spec-файла
-          REQUIRES: python3,kivy  # Зависимости из spec-файла
-          BOOTSTRAP: sdl2         # Бутстреп из spec-файла
-          ARCHS: arm64-v8a,armeabi-v7a,x86_64 # Архитектуры (можно убрать x86_64)
-        run: |-
-          # Создаем папку для сохранения результатов
-          mkdir -p artifacts
+          # Устанавливаем утилиты для ключей
+          sudo apt-get install -y ca-certificates curl gnupg lsb-release
 
-          # Собираем контейнером
-          nerdctl run --rm \
-            -e PACKAGES_PATH=/packages \
-            -e ANDROIDSDK=/android-sdk \
-            -e 
+          # Добавляем GPG-ключи Docker-а
+          sudo mkdir -m 0755 -p /etc/apt/keyrings
+          curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+          # Добавляем официальный репозиторий Docker-а
+          echo \
+            "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+            $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+          # Обновляем пакеты после добавления нового реп
