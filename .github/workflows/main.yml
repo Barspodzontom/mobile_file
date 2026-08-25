@@ -19,7 +19,19 @@ jobs:
 
       # Установка зависимостей только для работы с Git и Docker
       - name: Install system dependencies
-        run: sudo apt-get update && sudo apt-get install -y git docker.io
+          # Установка Git и современного менеджера контейнеров для Ubuntu 24.04
+        run: |
+              # Обновляем список пакетов
+              sudo apt-get update
+            
+              # Устанавливаем Git
+              sudo apt-get install -y --no-install-recommends git
+            
+              # Удаляем старые остатки Docker, если они есть
+              sudo apt-get remove -y docker docker-engine containerd runc || true
+            
+              # Устанавливаем nerdctl (современный аналог Docker)
+              sudo snap install nerdctl --classic
 
       # Запуск официальной среды python-for-android внутри контейнера
       - name: Build APK in official P4A container
@@ -35,7 +47,7 @@ jobs:
           mkdir -p artifacts
 
           # Собираем контейнером
-          docker run --rm \
+          nerdctl run --rm \
             -e PACKAGES_PATH=/packages \
             -e ANDROIDSDK=/android-sdk \
             -e 
