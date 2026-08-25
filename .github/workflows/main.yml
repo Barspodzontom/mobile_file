@@ -1,4 +1,3 @@
-# Этот код заменяет ВСЁ содержание файла main.yml
 name: Build Android APK
 
 on:
@@ -41,18 +40,14 @@ jobs:
           BOOTSTRAP: sdl2         # Бутстреп из spec-файла
           ARCHS: arm64-v8a,armeabi-v7a,x86_64 # Архитектуры (можно убрать x86_64)
         run: |
-          # Создаем папку для сохранения результатов ИЗМЕНЯЕМ ПОРЯДОК!
-          mkdir -p artifacts          # <--- ЭТО ДОЛЖНО БЫТЬ ПЕРВОЙ КОМАНДОЙ
-          
-          # Меняем владельца папки на пользователя runner (это важно!)
+          mkdir -p artifacts
           sudo chown runner:runner ./artifacts 
 
-          # Собираем контейнером
           docker run --rm \  
-            -v ${GITHUB_WORKSPACE}:/home/user/app \ # <-- Эта строка уже есть
-            -v ${GITHUB_WORKSPACE}/artifacts:/home/user/app/artifacts \ # <--- ДОБАВЛЯЕТСЯ СЮДА!!!
+            -v ${GITHUB_WORKSPACE}:/home/user/app \
+            -v ${GITHUB_WORKSPACE}/artifacts:/home/user/app/artifacts \
             kivy/p4a-buildozer:python3.11-kivy2.3.0 \
-              ./toolchain.py create --debug
+            ./toolchain.py create --debug
 
           cp -r .buildozer/android/platform/build-*/*/dists/${DIST_NAME}/bin/*.apk artifacts/
 
